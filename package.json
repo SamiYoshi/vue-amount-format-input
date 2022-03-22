@@ -17,12 +17,12 @@
 	"files": [
 		"dist/*"
 	],
+	"main": "dist/vue-amount-format-input.common.js",
 	"scripts": {
 		"serve": "vue-cli-service serve",
 		"build": "vue-cli-service build",
 		"build-library": "vue-cli-service build --target lib --name vue-amount-format-input ./src/install.js"
 	},
-	"main": ".dist/vue-amount-format-input.common.js",
 	"dependencies": {
 		"core-js": "^3.6.5",
 		"vue": "^3.0.0"
