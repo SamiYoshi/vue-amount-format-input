@@ -1,8 +1,6 @@
 # vue-amount-format-input
 
-
-
-## To Install
+### To Install
 ```
 npm install --save vue-amount-format-input
 ```
@@ -11,7 +9,7 @@ Once you have installed the package, in your entry file of the repository (main.
 ```
 import VueAmountFormatInput from 'vue-amount-format-input'
 ```
-## To install it globally
+### To install it globally
 
 ```
 Vue.use(AmountFormatInputInstall)
