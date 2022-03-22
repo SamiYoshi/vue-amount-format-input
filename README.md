@@ -7,15 +7,21 @@ npm install --save vue-amount-format-input
 Once you have installed the package, in your entry file of the repository (main.js) if you are using it in a Vue CLI project. Write the import command
 
 ```
-import VueAmountFormatInput from 'vue-amount-format-input'
-```
-### To install it globally
+import AmountFormatInputInstall from 'vue-amount-format-input'
 
+app.use(AmountFormatInputInstall)
 ```
-Vue.use(AmountFormatInputInstall)
-```
-If not globally, you can also import the individual components locally.
 
-```
-import 'HelloWorld' from 'vue-amount-format-input'
-```
+### TODO List
+
+#### Behaviours
+- copy-paste > format when it's not a Number
+- Moving arrows should skip separators
+- Clear decimalsChar on input after removing decimals
+- Blur add decimals
+
+#### Options to be added to input:
+- emptyInputBehavior
+- decimalsAllowed
+- showCurrencyOnHover
+- maxValue

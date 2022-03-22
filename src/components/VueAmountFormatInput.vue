@@ -52,9 +52,9 @@ const defaultOptions = {
 	decimalChar: '.',
 	decimalsAllowed: 2, /* not handle yet */
 	// alwaysAllowDecimalCharacter: true, /* not handle yet */
-	showCurrency: true, /* not handle yet */
+	showCurrencyOnHover: false, /* not handle yet */
 	currencySymbolPlacement: 'p',
-	currencySymbol: 'Kz'
+	currencySymbol: ''
 	// minValue: 0, /* not handle yet */
 	// maxValue: null /* not handle yet */
 }
