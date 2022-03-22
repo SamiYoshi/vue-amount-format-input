@@ -1,19 +1,23 @@
 # vue-amount-format-input
 
-## Project setup
-```
-npm install
-```
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
 
-### Compiles and minifies for production
+## To Install
 ```
-npm run build
+npm install --save vue-amount-format-input
 ```
+Once you have installed the package, in your entry file of the repository (main.js) if you are using it in a Vue CLI project. Write the import command
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+```
+import VueAmountFormatInput from 'vue-amount-format-input'
+```
+## To install it globally
+
+```
+Vue.use(AmountFormatInputInstall)
+```
+If not globally, you can also import the individual components locally.
+
+```
+import 'HelloWorld' from 'vue-amount-format-input'
+```
