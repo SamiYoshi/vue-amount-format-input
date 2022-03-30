@@ -16,7 +16,7 @@ app.use(AmountFormatInputInstall)
 
 #### Behaviours
 - copy-paste > format when it's not a Number
-- Moving arrows should skip separators
+- prevent first char from being zero, when no decimalChar is placed after
 
 #### Options to be added to input:
 - emptyInputBehavior

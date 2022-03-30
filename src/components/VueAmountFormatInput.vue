@@ -108,6 +108,16 @@ const keydownHandler = $event => {
 
 	const elem = $event.target
 
+	/* Handling keydown on arrows to skip separators  */
+	if (($event.key === 'ArrowLeft' || $event.key === 'ArrowRight') && !$event.shiftKey) {
+		const charToValidate = $event.key === 'ArrowLeft' ? elem.value.charAt(elem.selectionEnd - 2) : elem.value.charAt(elem.selectionEnd + 1)
+
+		if (charToValidate === options.value.digitGroupSeparator || charToValidate === options.value.decimalChar) {
+			currentCaretPositon.value = $event.key === 'ArrowLeft' ? elem.selectionEnd - 1 : elem.selectionEnd + 1
+			setCaretPosition(elem, currentCaretPositon.value)
+		}
+	}
+
 	/* Preventing user from adding more than one decimalChar */
 	if (isValidSeparator($event.key) && elem.value.includes(options.value.decimalChar)) {
 		$event.preventDefault()
