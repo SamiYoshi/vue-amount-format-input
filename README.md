@@ -17,8 +17,6 @@ app.use(AmountFormatInputInstall)
 #### Behaviours
 - copy-paste > format when it's not a Number
 - Moving arrows should skip separators
-- Clear decimalsChar on input after removing decimals
-- Blur add decimals
 
 #### Options to be added to input:
 - emptyInputBehavior
