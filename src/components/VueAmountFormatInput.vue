@@ -6,7 +6,10 @@
 	:placeholder="placeholder"
 	@keydown="keydownHandler"
 	@input="inputValueHandler"
-	@blur="blurHandler"/>
+	@focus="focusHandler"
+	@blur="blurHandler"
+	@mouseover="mouseOverHandler"
+	@mouseleave="mouseLeaveHandler"/>
 </template>
 
 <script setup>
@@ -40,7 +43,8 @@ const defaultOptions = {
 	decimalChar: '.',
 	decimalsAllowed: 2, /* not handle yet */
 	// alwaysAllowDecimalCharacter: true, /* not handle yet */
-	showCurrencyOnHover: false, /* not handle yet */
+	showCurrencyOnFocus: false,
+	showCurrencyOnHover: false,
 	currencySymbolPlacement: 'p',
 	currencySymbol: '',
 	maxValue: 99999999999999.98 /* Max value before js start rounding values */
@@ -62,6 +66,8 @@ const options = computed(() => {
 *************************************************/
 const _value = ref(props.value > options.value.maxValue ? '' : props.value)
 const inputDomRef = ref('')
+const showCurrency = ref(false)
+const inputOnFocus = ref(false)
 
 const ALLOWED_SEPARATORS = [',', '.', '٫']
 const INTEGER_PATTERN = '(0|[1-9]\\d*)'
@@ -93,7 +99,7 @@ watch(() => options.value.currencySymbol, (newVal, oldVal) => {
 *                                                *
 *************************************************/
 const isValidSeparator = key => { return !!ALLOWED_SEPARATORS.find(separator => separator === key) }
-const isDigit = key => { return key.match(INTEGER_PATTERN) }
+const isDigit = key => { return !!key.match(INTEGER_PATTERN) }
 
 /*************************************************
 *                                                *
@@ -118,6 +124,28 @@ const keydownHandler = $event => {
 			currentCaretPositon.value = $event.key === 'ArrowLeft' ? elem.selectionEnd - 1 : elem.selectionEnd + 1
 			setCaretPosition(elem, currentCaretPositon.value)
 		}
+	}
+
+	/* Preventing zeros from being inserted at left of number if we already have a decimalChar */
+	if ($event.key === '0' &&
+		elem.selectionEnd === options.value.currencySymbol.length + 1 &&
+		elem.value.includes(options.value.decimalChar)) {
+		$event.preventDefault()
+		return
+	}
+
+	/* Replacing zero at left, if another number is inserted at left of decimalChar */
+	if (isDigit($event.key) &&
+		elem.value.charAt(options.value.currencySymbol.length + 1) === '0' &&
+		elem.selectionEnd - 1 === options.value.currencySymbol.length + 1) {
+		/* saving caret position for setting it later */
+		currentCaretPositon.value = elem.selectionEnd + 1
+		elem.value = stringReplaceAt(elem.value, options.value.currencySymbol.length + 1, $event.key)
+		setCaretPosition(elem, currentCaretPositon.value)
+
+		updateValue(elem.value)
+		$event.preventDefault()
+		return
 	}
 
 	/* Preventing user from adding more than one decimalChar */
@@ -166,6 +194,7 @@ const keydownHandler = $event => {
 */
 const blurHandler = $event => {
 	emit('blur', $event)
+	inputOnFocus.value = false
 
 	if (_value.value.length > (options.value.currencySymbol.length + 1)) {
 		/* Creating a string with options.value.decimalsAllowed zeros */
@@ -179,6 +208,23 @@ const blurHandler = $event => {
 		}
 
 		updateValue($event.target.value)
+	} else {
+		setCurrencyShowValue(false)
+	}
+}
+
+/* Logic to display currencySymbol on Focus / mouseOverHandler / mouseLeaveHandler, when input is empty */
+const focusHandler = $event => {
+	inputOnFocus.value = true
+	setCurrencyShowValue(true)
+}
+const mouseOverHandler = $event => { if (options.value.showCurrencyOnHover) setCurrencyShowValue(true) }
+const mouseLeaveHandler = $event => { if (!inputOnFocus.value) setCurrencyShowValue(false) }
+
+const setCurrencyShowValue = state => {
+	showCurrency.value = state
+	if (_value.value.length <= (options.value.currencySymbol.length + 1)) {
+		setTimeout(() => handleValueChange(inputDomRef.value, true), 0)
 	}
 }
 
@@ -213,7 +259,6 @@ const handleValueChange = (elem, insertedFromPaste) => {
 	const decimals = checkDecimalCharsLength(elem.value)
 
 	if (validateIfBigThenMaxValue(elem.value)) {
-		console.log(elem.value, _value.value, currentCaretPositon.value)
 		elem.value = _value.value
 		currentCaretPositon.value = currentCaretPositon.value + options.value.currencySymbol.length
 		setCaretPosition(elem, currentCaretPositon.value)
@@ -374,7 +419,7 @@ const applyingGroupSeparator = (value, decimals) => {
 @return { String }
 */
 const applyingCurrencySymbol = value => {
-	if (!options.value.currencySymbol.length || !value.length) return value
+	if ((!options.value.currencySymbol.length || !value.length) && !showCurrency.value) return value
 
 	if (options.value.currencySymbolPlacement === 'p') {
 		currentCaretPositon.value = currentCaretPositon.value + options.value.currencySymbol.length + 1 /* this 1 is the space between currency and value */

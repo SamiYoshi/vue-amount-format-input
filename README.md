@@ -17,6 +17,8 @@ app.use(AmountFormatInputInstall)
 options = {
 	digitGroupSeparator: '',
 	decimalChar: '.',
+	showCurrencyOnFocus: false,
+	showCurrencyOnHover: false,
 	currencySymbolPlacement: 'p',
 	currencySymbol: '',
 	maxValue: 99999999999999.98
@@ -28,9 +30,7 @@ options = {
 
 #### Behaviours
 - copy-paste > format when it's not a Number
-- prevent first char from being zero, when no decimalChar is placed after
 
 #### Options to be added to input:
 - emptyInputBehavior
 - decimalsAllowed
-- showCurrencyOnHover
