@@ -108,6 +108,21 @@ const keydownHandler = $event => {
 
 	const elem = $event.target
 
+	/* Preventing user from adding more than one decimalChar */
+	if (isValidSeparator($event.key) && elem.value.includes(options.value.decimalChar)) {
+		$event.preventDefault()
+		return
+	}
+
+	/* If we have no decimalChar, we are changing the decimalChar entered to the one in our options */
+	if (isValidSeparator($event.key) && !elem.value.includes(options.value.decimalChar)) {
+		elem.value = elem.value + options.value.decimalChar
+
+		updateValue(elem.value)
+		$event.preventDefault()
+		return
+	}
+
 	/* Preventing user from writinig more than two decimals chars */
 	if (isDigit($event.key) &&
 		checkDecimalCharsLength(elem.value) >= options.value.decimalsAllowed &&
@@ -140,11 +155,17 @@ const keydownHandler = $event => {
 const blurHandler = $event => {
 	emit('blur', $event)
 
-	if (_value.value.length > (options.value.currencySymbol.length + 1) && checkDecimalCharsLength(_value.value) === null) {
+	if (_value.value.length > (options.value.currencySymbol.length + 1)) {
 		/* Creating a string with options.value.decimalsAllowed zeros */
-		const decimals = Array.from({ length: options.value.decimalsAllowed }, (v, k) => '0').join('')
+		const decimalsNeeded = options.value.decimalsAllowed - checkDecimalCharsLength(_value.value)
+		const decimals = Array.from({ length: decimalsNeeded }, (v, k) => '0').join('')
 
-		$event.target.value = `${_value.value}${options.value.decimalChar}${decimals}`
+		if (_value.value.includes(options.value.decimalChar)) {
+			$event.target.value = `${_value.value}${decimals}`
+		} else {
+			$event.target.value = `${_value.value}${options.value.decimalChar}${decimals}`
+		}
+
 		updateValue($event.target.value)
 	}
 }
@@ -156,6 +177,12 @@ const blurHandler = $event => {
 */
 const inputValueHandler = $event => {
 	const elem = $event.target
+
+	/* Removing DecimalChar if user deletes all decimalChars */
+	if ($event.inputType === 'deleteContentBackward' && elem.value.includes(options.value.decimalChar)) {
+		var checkIfDecimals = elem.value.split(options.value.decimalChar)[1]
+		if (checkIfDecimals.length === 0) elem.value = elem.value.split(options.value.decimalChar)[0]
+	}
 
 	currentCaretPositon.value = elem.selectionEnd
 	handleValueChange(elem, $event.inputType === 'insertFromPaste')
@@ -213,7 +240,7 @@ const handlePasteValue = pastedValue => {
 	if (isNaN(pastedValue)) {
 		console.log(pastedValue, 'not being handle yet')
 	} else {
-		return parseFloat(pastedValue).toFixed(options.value.decimalsAllowed)
+		return parseFloat(pastedValue).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
 	}
 }
 
@@ -233,7 +260,7 @@ const checkDecimalCharsLength = value => {
 
     for (var y = (valArray.length - 1); y >= (valArray.length - 3) && y > 0; y--) {
 		const value = valArray[y]
-        const isSeparator = !!ALLOWED_SEPARATORS.find(separator => valArray[y].includes(separator))
+        const isSeparator = !!ALLOWED_SEPARATORS.find(separator => valArray[y].includes(separator)) && valArray[y] === options.value.decimalChar
 
 		if (isSeparator) {
 			decimalChars = (valArray.length - 1) - y
