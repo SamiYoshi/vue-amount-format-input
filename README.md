@@ -12,6 +12,18 @@ import AmountFormatInputInstall from 'vue-amount-format-input'
 app.use(AmountFormatInputInstall)
 ```
 
+### Options this input support and its defaults values:
+```
+options = {
+	digitGroupSeparator: '',
+	decimalChar: '.',
+	currencySymbolPlacement: 'p',
+	currencySymbol: '',
+	maxValue: 99999999999999.98
+}
+```
+
+
 ### TODO List
 
 #### Behaviours
@@ -22,4 +34,3 @@ app.use(AmountFormatInputInstall)
 - emptyInputBehavior
 - decimalsAllowed
 - showCurrencyOnHover
-- maxValue

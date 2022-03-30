@@ -3,6 +3,7 @@
 	type="text"
 	ref="inputDomRef"
 	:value="_value"
+	:placeholder="placeholder"
 	@keydown="keydownHandler"
 	@input="inputValueHandler"
 	@blur="blurHandler"/>
@@ -24,22 +25,9 @@ const emit = defineEmits(['input', 'keydown', 'blur'])
 */
 const props = defineProps({
 	value: [String, Number],
+	placeholder: String,
 	options: Object
 })
-
-/*************************************************
-*                                                *
-*                     DATA                       *
-*                                                *
-*************************************************/
-const _value = ref(props.value)
-const inputDomRef = ref('')
-
-const ALLOWED_SEPARATORS = [',', '.', '٫']
-const INTEGER_PATTERN = '(0|[1-9]\\d*)'
-
-/* we could also use selectionStart, since both props are the same when writing */
-const currentCaretPositon = ref('')
 
 /*************************************************
 *                                                *
@@ -54,18 +42,32 @@ const defaultOptions = {
 	// alwaysAllowDecimalCharacter: true, /* not handle yet */
 	showCurrencyOnHover: false, /* not handle yet */
 	currencySymbolPlacement: 'p',
-	currencySymbol: ''
-	// minValue: 0, /* not handle yet */
-	// maxValue: null /* not handle yet */
+	currencySymbol: '',
+	maxValue: 99999999999999.98 /* Max value before js start rounding values */
 }
 
 /* Joining default options with received */
 const options = computed(() => {
 	return {
 		...defaultOptions,
-		...props.options
+		...props.options,
+		maxValue: !props.options.maxValue || props.options.maxValue > defaultOptions.maxValue ? defaultOptions.maxValue : props.options.maxValue
 	}
 })
+
+/*************************************************
+*                                                *
+*                     DATA                       *
+*                                                *
+*************************************************/
+const _value = ref(props.value > options.value.maxValue ? '' : props.value)
+const inputDomRef = ref('')
+
+const ALLOWED_SEPARATORS = [',', '.', '٫']
+const INTEGER_PATTERN = '(0|[1-9]\\d*)'
+
+/* we could also use selectionStart, since both props are the same when writing */
+const currentCaretPositon = ref('')
 
 /*************************************************
 *                                                *
@@ -210,6 +212,13 @@ const handleValueChange = (elem, insertedFromPaste) => {
 	if (insertedFromPaste) elem.value = handlePasteValue(elem.value)
 	const decimals = checkDecimalCharsLength(elem.value)
 
+	if (validateIfBigThenMaxValue(elem.value)) {
+		console.log(elem.value, _value.value, currentCaretPositon.value)
+		elem.value = _value.value
+		currentCaretPositon.value = currentCaretPositon.value + options.value.currencySymbol.length
+		setCaretPosition(elem, currentCaretPositon.value)
+		return
+	}
 	elem.value = unformat(elem.value)
 	elem.value = format(elem.value, decimals)
 	setCaretPosition(elem, currentCaretPositon.value)
@@ -278,6 +287,12 @@ const checkDecimalCharsLength = value => {
 		}
     }
 	return decimalChars
+}
+
+/* Validating if number is bigger then maxValue, if so change currentCaretPositon value */
+const validateIfBigThenMaxValue = value => {
+	const temp = Number(value.replaceAll('.', '').replace(',', '.'))
+	return temp > options.value.maxValue
 }
 
 /*
@@ -380,12 +395,6 @@ const changeCurrencySymbol = (value, newCurrency, oldCurrency) => {
 	return value.replace(oldCurrency, newCurrency)
 }
 
-/* Update _value and emit it without format and currency */
-const updateValue = value => {
-	_value.value = value
-	emit('input', formatToNumber(value))
-}
-
 /*
 * Converts string to number and returns it
 @value { String }
@@ -393,13 +402,13 @@ const updateValue = value => {
 */
 const formatToNumber = value => {
 	const decimals = checkDecimalCharsLength(value)
-	let valueToEmit = unformat(value)
+	let valueNumbered = unformat(value)
 
-	if (!valueToEmit.length) return null
+	if (!valueNumbered.length) return null
 
-	valueToEmit = parseFloat(applyingDecimals(valueToEmit, decimals, true))
+	valueNumbered = parseFloat(applyingDecimals(valueNumbered, decimals, true))
 
-	return valueToEmit
+	return valueNumbered
 }
 
 /* Position input caret in specific position */
@@ -418,6 +427,19 @@ const stringReplaceAt = (string, index, replacementValue) => {
 	return string.substring(0, index) + replacementValue + string.substring(index + 1)
 }
 
+/* Update _value and emit it without format and currency */
+const updateValue = value => {
+	_value.value = value
+	emit('input', formatToNumber(value))
+}
+
+const initialBehaviours = () => {
+	if (props.value > options.value.maxValue) {
+		console.warn(`Value <${props.value}> falls out of our maxValue <${options.value.maxValue}>`)
+		return
+	}
+	handleValueChange(inputDomRef.value, true)
+}
 /* Formating our value on create, in case we have a value already */
-setTimeout(() => handleValueChange(inputDomRef.value, true), 0)
+setTimeout(() => initialBehaviours(), 0)
 </script>
