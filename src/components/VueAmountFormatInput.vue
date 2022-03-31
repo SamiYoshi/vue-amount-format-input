@@ -171,9 +171,22 @@ const keydownHandler = $event => {
 
 	/* If we have no decimalChar, we are changing the decimalChar entered to the one in our options */
 	if (isValidSeparator($event.key) && !elem.value.includes(options.value.decimalChar)) {
-		elem.value = elem.value + options.value.decimalChar
+		if (elem.selectionEnd === elem.value.length) {
+			elem.value = elem.value + options.value.decimalChar
+			updateValue(elem.value)
+			$event.preventDefault()
+			return
+		}
 
-		updateValue(elem.value)
+		if (isValidSeparator(elem.value.charAt(elem.selectionEnd))) {
+			elem.value = stringReplaceAt(elem.value, elem.selectionEnd, options.value.decimalChar)
+			currentCaretPositon.value = elem.selectionEnd + 1
+			setCaretPosition(elem, currentCaretPositon.value)
+		} else {
+			currentCaretPositon.value = elem.selectionEnd
+			elem.value = elem.value.slice(0, elem.selectionEnd) + options.value.decimalChar + elem.value.slice(elem.selectionEnd)
+		}
+		handleValueChange(inputDomRef.value, true)
 		$event.preventDefault()
 		return
 	}
@@ -510,9 +523,7 @@ const formatToNumber = value => {
 }
 
 /* Position input caret in specific position */
-const setCaretPosition = (elem, position) => {
-	elem.setSelectionRange(position, position)
-}
+const setCaretPosition = (elem, position) => { elem.setSelectionRange(position, position) }
 
 /*
 * Replaces a number in our value string
