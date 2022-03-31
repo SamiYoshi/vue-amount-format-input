@@ -16,6 +16,20 @@ app.use(AmountFormatInputInstall)
 ```
 
 ## Options this input support and its defaults values:
+
+Options allow you to customize the input will format your amount as you type.
+
+| Option | Description | Default Value |
+| :----------------: | :-----------:  | :-----------:  |
+| `digitGroupSeparator` | Thousands group separator | `null` |
+| `decimalChar` | Decimal separator character. Allowed values: `.` `,` `٫` | `.` |
+| `showCurrencyOnFocus` | Defines if currency should be shown on input focus | `false` |
+| `showCurrencyOnHover` | Defines if currency should be shown on input hover | `false` |
+| `currencySymbol` | Defines currency symbol to display | `null` |
+| `currencySymbolPlacement` | Defines where currencySymbol will be displayed. Possible values `p` for prefix and `s` for suffix | `p` |
+| `maxValue` | The maximum value that can be entered | `99999999999999.98` |
+
+Our Input will receive these options as an Object in prop `options` as the example below:
 ```
 options = {
 	digitGroupSeparator: '',
@@ -27,28 +41,6 @@ options = {
 	maxValue: 99999999999999.98
 }
 ```
-
-#### digitGroupSeparator
-Can be any char you want, but use chars at your own risk.
-
-#### decimalChar
-Allowed characters for this separator , . ٫
-
-#### showCurrencyOnFocus
-Option to define if currency should be shown on input focus
-
-#### showCurrencyOnHover
-Option to define if currency should be shown on input hover
-
-#### currencySymbolPlacement
-Possible values 'p' (prefix) or 's' (sufix)
-
-#### currencySymbol
-Can be any char you want, but use chars at your own risk.
-
-#### maxValue
-Max value for your input
-
 ## TODO List
 
 #### Options to be added to input:
