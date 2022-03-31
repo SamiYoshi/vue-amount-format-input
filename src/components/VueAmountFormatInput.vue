@@ -20,11 +20,17 @@ import { ref, computed, watch, onMounted } from 'vue'
 const emit = defineEmits(['input', 'keydown', 'blur'])
 
 /** props received
+@value { String, Number }
+@placeholder { String }
 @options { Object } each item is an Object
 	- digitGroupSeparator { String } default value => '.'
 	- decimalChar: { String } default value => '.'
+	- alwaysAllowDecimalCharacter { Boolean } default value => true
+	- showCurrencyOnFocus: { Boolean } default value => false
+	- showCurrencyOnHover: { Boolean } default value => false
 	- currencySymbolPlacement: { String } default value => 'p'
 	- currencySymbol: { String } default value => ''
+	- maxValue: { String } default value => 99999999999999.98
 */
 const props = defineProps({
 	value: [String, Number],
@@ -42,7 +48,7 @@ const defaultOptions = {
 	digitGroupSeparator: '',
 	decimalChar: '.',
 	decimalsAllowed: 2, /* not handle yet */
-	// alwaysAllowDecimalCharacter: true, /* not handle yet */
+	alwaysAllowDecimalCharacter: true,
 	showCurrencyOnFocus: false,
 	showCurrencyOnHover: false,
 	currencySymbolPlacement: 'p',
@@ -115,6 +121,11 @@ const keydownHandler = $event => {
 	emit('keydown', $event)
 
 	const elem = $event.target
+
+	if (!options.value.alwaysAllowDecimalCharacter && isValidSeparator($event.key)) {
+		$event.preventDefault()
+		return
+	}
 
 	/* Handling keydown on arrows to skip separators  */
 	if (($event.key === 'ArrowLeft' || $event.key === 'ArrowRight') && !$event.shiftKey) {
@@ -196,7 +207,7 @@ const blurHandler = $event => {
 	emit('blur', $event)
 	inputOnFocus.value = false
 
-	if (_value.value.length > (options.value.currencySymbol.length + 1)) {
+	if (_value.value.length > (options.value.currencySymbol.length + 1) && options.value.alwaysAllowDecimalCharacter) {
 		/* Creating a string with options.value.decimalsAllowed zeros */
 		const decimalsNeeded = options.value.decimalsAllowed - checkDecimalCharsLength(_value.value)
 		const decimals = Array.from({ length: decimalsNeeded }, (v, k) => '0').join('')
@@ -283,7 +294,7 @@ const removingUnwantedChars = value => {
 	var newValueArray = []
 
     for (var y = 0; y < valueArrayLength; y++) {
-        if (isValidSeparator(valueArray[y]) || isDigit(valueArray[y])) {
+        if ((isValidSeparator(valueArray[y]) && options.value.alwaysAllowDecimalCharacter) || isDigit(valueArray[y])) {
 			newValueArray.push(valueArray[y])
 		} else {
 			/* if we remove a char before our caret position, we need to subtract 1 to it's position for every nonvalid char */
@@ -303,7 +314,7 @@ const handlePasteValue = pastedValue => {
 	/*
 	* Second we will check if this value is a valid number
 	*/
-	if (!isNaN(value)) return parseFloat(value).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
+	if (!isNaN(value)) return parseFloatAndFormat(value)
 
 	/*
 	* Validating how many separators exist in our string, and which ones
@@ -319,7 +330,7 @@ const handlePasteValue = pastedValue => {
 	/* If we have only one separator we will treat it as our decimalChar separator */
 	if (separatorsInString.length === 1 && separatorsInString[0].count === 1) {
 		value = value.replace(separatorsInString[0].separator, '.')
-		return parseFloat(value).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
+		return parseFloatAndFormat(value)
 	}
 
 	/*
@@ -334,11 +345,16 @@ const handlePasteValue = pastedValue => {
 		})
 
 		value = value.replace(separatorUsedOnce.separator, '.')
-		return parseFloat(value).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
+		return parseFloatAndFormat(value)
 	}
 
 	ALLOWED_DECIMAL_SEPARATORS.forEach(separator => { value = value.replaceAll(separator, '') })
 
+	return parseFloatAndFormat(value)
+}
+
+const parseFloatAndFormat = value => {
+	if (!options.value.alwaysAllowDecimalCharacter) return parseFloat(value)
 	return parseFloat(value).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
 }
 
@@ -370,8 +386,7 @@ const checkDecimalCharsLength = value => {
 
 /* Validating if number is bigger then maxValue, if so change currentCaretPositon value */
 const validateIfBigThenMaxValue = value => {
-	const temp = Number(value.replaceAll('.', '').replace(',', '.'))
-	return temp > options.value.maxValue
+	return Number(value.replaceAll('.', '').replace(',', '.')) > options.value.maxValue
 }
 
 /*
