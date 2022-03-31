@@ -3,7 +3,7 @@
 Inspired by [AutoNumeric](https://github.com/autoNumeric/autoNumeric/), after using it for many years, decided to create my own amount format input for Vue3.
 Made this focused on my needs for my personal projects, but feel free to open issues for new behaviours or problems you found, I'll try my best to help you.
 
-### To Install
+## To Install
 ```
 npm install --save vue-amount-format-input
 ```
@@ -15,7 +15,7 @@ import AmountFormatInputInstall from 'vue-amount-format-input'
 app.use(AmountFormatInputInstall)
 ```
 
-### Options this input support and its defaults values:
+## Options this input support and its defaults values:
 ```
 options = {
 	digitGroupSeparator: '',
@@ -28,28 +28,28 @@ options = {
 }
 ```
 
-###### digitGroupSeparator
+#### digitGroupSeparator
 Can be any char you want, but use chars at your own risk.
 
-###### decimalChar
+#### decimalChar
 Allowed characters for this separator , . ٫
 
-###### showCurrencyOnFocus
+#### showCurrencyOnFocus
 Option to define if currency should be shown on input focus
 
-###### showCurrencyOnHover
+#### showCurrencyOnHover
 Option to define if currency should be shown on input hover
 
-###### currencySymbolPlacement
+#### currencySymbolPlacement
 Possible values 'p' (prefix) or 's' (sufix)
 
-###### currencySymbol
+#### currencySymbol
 Can be any char you want, but use chars at your own risk.
 
-###### maxValue
+#### maxValue
 Max value for your input
 
-### TODO List
+## TODO List
 
 #### Options to be added to input:
 - emptyInputBehavior
