@@ -1,5 +1,8 @@
 # vue-amount-format-input
 
+Inspired by [AutoNumeric](https://github.com/autoNumeric/autoNumeric/), after using it for many years, decided to create my own amount format input for Vue3.
+Made this focused on my needs for my personal projects, but feel free to open issues for new behaviours or problems you found, I'll try my best to help you.
+
 ### To Install
 ```
 npm install --save vue-amount-format-input

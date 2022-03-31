@@ -14,7 +14,7 @@
 
 <script setup>
 /* Vue */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 /* Emmitters */
 const emit = defineEmits(['input', 'keydown', 'blur'])
@@ -478,13 +478,11 @@ const updateValue = value => {
 	emit('input', formatToNumber(value))
 }
 
-const initialBehaviours = () => {
+onMounted(() => {
 	if (props.value > options.value.maxValue) {
 		console.warn(`Value <${props.value}> falls out of our maxValue <${options.value.maxValue}>`)
 		return
 	}
 	handleValueChange(inputDomRef.value, true)
-}
-/* Formating our value on create, in case we have a value already */
-setTimeout(() => initialBehaviours(), 0)
+})
 </script>
