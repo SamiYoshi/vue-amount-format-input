@@ -28,11 +28,28 @@ options = {
 }
 ```
 
+###### digitGroupSeparator
+Can be any char you want, but use chars at your own risk.
+
+###### decimalChar
+Allowed characters for this separator , . ٫
+
+###### showCurrencyOnFocus
+Option to define if currency should be shown on input focus
+
+###### showCurrencyOnHover
+Option to define if currency should be shown on input hover
+
+###### currencySymbolPlacement
+Possible values 'p' (prefix) or 's' (sufix)
+
+###### currencySymbol
+Can be any char you want, but use chars at your own risk.
+
+###### maxValue
+Max value for your input
 
 ### TODO List
-
-#### Behaviours
-- copy-paste > format when it's not a Number
 
 #### Options to be added to input:
 - emptyInputBehavior
