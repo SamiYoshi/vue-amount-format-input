@@ -69,7 +69,7 @@ const inputDomRef = ref('')
 const showCurrency = ref(false)
 const inputOnFocus = ref(false)
 
-const ALLOWED_SEPARATORS = [',', '.', '٫']
+const ALLOWED_DECIMAL_SEPARATORS = [',', '.', '٫']
 const INTEGER_PATTERN = '(0|[1-9]\\d*)'
 
 /* we could also use selectionStart, since both props are the same when writing */
@@ -98,7 +98,7 @@ watch(() => options.value.currencySymbol, (newVal, oldVal) => {
 *                VALIDATORS HELPERS              *
 *                                                *
 *************************************************/
-const isValidSeparator = key => { return !!ALLOWED_SEPARATORS.find(separator => separator === key) }
+const isValidSeparator = key => { return !!ALLOWED_DECIMAL_SEPARATORS.find(separator => separator === key) }
 const isDigit = key => { return !!key.match(INTEGER_PATTERN) }
 
 /*************************************************
@@ -298,14 +298,48 @@ const removingUnwantedChars = value => {
 @return { number }
 */
 const handlePasteValue = pastedValue => {
+	let value = removingUnwantedChars(pastedValue)
+
 	/*
-	* First we will check if this value is a valid number
+	* Second we will check if this value is a valid number
 	*/
-	if (isNaN(pastedValue)) {
-		console.log(pastedValue, 'not being handle yet')
-	} else {
-		return parseFloat(pastedValue).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
+	if (!isNaN(value)) return parseFloat(value).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
+
+	/*
+	* Validating how many separators exist in our string, and which ones
+	*/
+	const separatorsInString = [] // { separator: count }
+	ALLOWED_DECIMAL_SEPARATORS.forEach(separator => {
+		if (!value.includes(separator)) return
+
+		const count = value.length - value.replaceAll(separator, '').length
+		separatorsInString.push({ separator: separator, count: count })
+	})
+
+	/* If we have only one separator we will treat it as our decimalChar separator */
+	if (separatorsInString.length === 1 && separatorsInString[0].count === 1) {
+		value = value.replace(separatorsInString[0].separator, '.')
+		return parseFloat(value).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
 	}
+
+	/*
+	* If we have more than one separator,
+	* we will check if one of them appears only one time, and treat it as our decimalChar separator
+	* We will use the first one we find
+	*/
+	const separatorUsedOnce = separatorsInString.find(obj => obj.count === 1)
+	if (separatorsInString.length && !!separatorUsedOnce) {
+		separatorsInString.filter(obj => obj.separator !== separatorUsedOnce.separator).forEach(separator => {
+			value = value.replaceAll(separator.separator, '')
+		})
+
+		value = value.replace(separatorUsedOnce.separator, '.')
+		return parseFloat(value).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
+	}
+
+	ALLOWED_DECIMAL_SEPARATORS.forEach(separator => { value = value.replaceAll(separator, '') })
+
+	return parseFloat(value).toFixed(options.value.decimalsAllowed).replace('.', options.value.decimalChar)
 }
 
 /*
@@ -324,7 +358,7 @@ const checkDecimalCharsLength = value => {
 
     for (var y = (valArray.length - 1); y >= (valArray.length - 3) && y > 0; y--) {
 		const value = valArray[y]
-        const isSeparator = !!ALLOWED_SEPARATORS.find(separator => valArray[y].includes(separator)) && valArray[y] === options.value.decimalChar
+        const isSeparator = !!ALLOWED_DECIMAL_SEPARATORS.find(separator => valArray[y].includes(separator)) && valArray[y] === options.value.decimalChar
 
 		if (isSeparator) {
 			decimalChars = (valArray.length - 1) - y
