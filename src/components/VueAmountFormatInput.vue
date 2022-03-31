@@ -161,6 +161,10 @@ const keydownHandler = $event => {
 
 	/* Preventing user from adding more than one decimalChar */
 	if (isValidSeparator($event.key) && elem.value.includes(options.value.decimalChar)) {
+		if (isValidSeparator(elem.value.charAt(elem.selectionEnd))) {
+			currentCaretPositon.value = elem.selectionEnd + 1
+			setCaretPosition(elem, currentCaretPositon.value)
+		}
 		$event.preventDefault()
 		return
 	}
