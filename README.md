@@ -15,9 +15,9 @@ import AmountFormatInputInstall from 'vue-amount-format-input'
 app.use(AmountFormatInputInstall)
 ```
 
-## Options this input support and its defaults values:
+## Options this input supports and it's default values:
 
-Options allow you to customize the input will format your amount as you type.
+Options allow you to customize how the input will format the amount as you type.
 
 | Option | Description | Default Value |
 | :----------------: | :-----------:  | :-----------:  |
