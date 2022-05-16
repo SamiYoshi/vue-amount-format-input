@@ -65,6 +65,16 @@ const options = computed(() => {
 	}
 })
 
+const currencyLengthAtLeft = computed(() => {
+	if (options.value.currencySymbolPlacement === 's') return 0
+	return options.value.currencySymbol.length + 1 // 1 is the space between our currency and number
+})
+
+const currencyLengthAtRight = computed(() => {
+	if (options.value.currencySymbolPlacement === 'p') return 0
+	return options.value.currencySymbol.length + 1 // 1 is the space between our currency and number
+})
+
 /*************************************************
 *                                                *
 *                     DATA                       *
@@ -79,7 +89,7 @@ const ALLOWED_DECIMAL_SEPARATORS = [',', '.', '٫']
 const INTEGER_PATTERN = '(0|[1-9]\\d*)'
 
 /* we could also use selectionStart, since both props are the same when writing */
-const currentCaretPositon = ref('')
+const currentCaretPositon = ref(0)
 
 /*************************************************
 *                                                *
@@ -121,6 +131,7 @@ const keydownHandler = $event => {
 	emit('keydown', $event)
 
 	const elem = $event.target
+	currentCaretPositon.value = elem.selectionEnd
 
 	if (!options.value.alwaysAllowDecimalCharacter && isValidSeparator($event.key)) {
 		$event.preventDefault()
@@ -139,7 +150,7 @@ const keydownHandler = $event => {
 
 	/* Preventing zeros from being inserted at left of number if we already have a decimalChar */
 	if ($event.key === '0' &&
-		elem.selectionEnd === options.value.currencySymbol.length + 1 &&
+		elem.selectionEnd === currencyLengthAtLeft.value &&
 		elem.value.includes(options.value.decimalChar)) {
 		$event.preventDefault()
 		return
@@ -147,11 +158,11 @@ const keydownHandler = $event => {
 
 	/* Replacing zero at left, if another number is inserted at left of decimalChar */
 	if (isDigit($event.key) &&
-		elem.value.charAt(options.value.currencySymbol.length + 1) === '0' &&
-		elem.selectionEnd - 1 === options.value.currencySymbol.length + 1) {
+		elem.value.charAt(currencyLengthAtLeft.value) === '0' &&
+		elem.selectionEnd - 1 === currencyLengthAtLeft.value) {
 		/* saving caret position for setting it later */
 		currentCaretPositon.value = elem.selectionEnd + 1
-		elem.value = stringReplaceAt(elem.value, options.value.currencySymbol.length + 1, $event.key)
+		elem.value = stringReplaceAt(elem.value, currencyLengthAtLeft.value, $event.key)
 		setCaretPosition(elem, currentCaretPositon.value)
 
 		updateValue(elem.value)
@@ -161,19 +172,54 @@ const keydownHandler = $event => {
 
 	/* Preventing user from adding more than one decimalChar */
 	if (isValidSeparator($event.key) && elem.value.includes(options.value.decimalChar)) {
+		/* When user selects numbers to replace, and has the decimal char inside this selection, we want to allow the place of new decimal char */
+		if (elem.selectionStart !== elem.selectionEnd) {
+			let allowDecimal = false
+			for (var i = elem.selectionStart; i < elem.selectionEnd; i++) {
+				if (isValidSeparator(elem.value.charAt(i))) {
+					allowDecimal = true
+					break
+				}
+			}
+
+			if (allowDecimal) {
+				currentCaretPositon.value = elem.selectionStart + 1
+
+				elem.value = elem.value.slice(0, elem.selectionStart) + options.value.decimalChar + elem.value.slice(elem.selectionEnd)
+				setCaretPosition(elem, currentCaretPositon.value)
+				handleValueChange(inputDomRef.value, true)
+				$event.preventDefault()
+				return
+			}
+		}
+
 		if (isValidSeparator(elem.value.charAt(elem.selectionEnd))) {
 			currentCaretPositon.value = elem.selectionEnd + 1
 			setCaretPosition(elem, currentCaretPositon.value)
 		}
+
 		$event.preventDefault()
 		return
 	}
 
 	/* If we have no decimalChar, we are changing the decimalChar entered to the one in our options */
 	if (isValidSeparator($event.key) && !elem.value.includes(options.value.decimalChar)) {
-		if (elem.selectionEnd === elem.value.length) {
-			elem.value = elem.value + options.value.decimalChar
-			updateValue(elem.value)
+		/* If user is inserting decimal char at the end of our number */
+		if (elem.selectionEnd === elem.value.length - currencyLengthAtRight.value) {
+			/*
+			* Validating if we have numbers before decimalChar,
+			* If not, we will add a zero before our decimalChar
+			*/
+			const additionalValueBeforeDecimal = !removeCurrencySymbol(elem.value).length ? '0' : ''
+
+			if (options.value.currencySymbolPlacement === 's') {
+				elem.value = elem.value.slice(0, elem.selectionEnd) + additionalValueBeforeDecimal + options.value.decimalChar + elem.value.slice(elem.selectionEnd)
+
+				currentCaretPositon.value = currentCaretPositon.value + 1 + additionalValueBeforeDecimal.length
+				setCaretPosition(elem, currentCaretPositon.value)
+			} else {
+				elem.value = elem.value + additionalValueBeforeDecimal + options.value.decimalChar
+			}
 			$event.preventDefault()
 			return
 		}
@@ -191,20 +237,22 @@ const keydownHandler = $event => {
 		return
 	}
 
+	/* To handle decimal logic */
+	const valNoCurrency = options.value.currencySymbolPlacement === 's' ? removeCurrencySymbol(elem.value) : elem.value
 	/* Preventing user from writinig more than two decimals chars */
 	if (isDigit($event.key) &&
-		checkDecimalCharsLength(elem.value) >= options.value.decimalsAllowed &&
-		elem.selectionStart === elem.selectionEnd &&
-		elem.selectionEnd === elem.value.length) $event.preventDefault()
+	checkDecimalCharsLength(valNoCurrency) >= options.value.decimalsAllowed &&
+	elem.selectionStart === elem.selectionEnd &&
+	elem.selectionEnd === valNoCurrency.length) $event.preventDefault()
 
 	/*
 	* If we already have 2 decimals chars,
 	* and user is trying to insert another one, we will want to change the next decimal to new inserted value
 	*/
 	if (isDigit($event.key) &&
-		checkDecimalCharsLength(elem.value) >= options.value.decimalsAllowed &&
-		elem.selectionEnd >= (elem.value.length - options.value.decimalsAllowed) &&
-		elem.selectionEnd !== elem.value.length) {
+	checkDecimalCharsLength(valNoCurrency) >= options.value.decimalsAllowed &&
+	elem.selectionEnd >= (valNoCurrency.length - options.value.decimalsAllowed) &&
+	elem.selectionEnd !== valNoCurrency.length) {
 		/* saving caret position for setting it later */
 		currentCaretPositon.value = elem.selectionEnd + 1
 		elem.value = stringReplaceAt(elem.value, elem.selectionEnd, $event.key)
@@ -224,17 +272,21 @@ const blurHandler = $event => {
 	emit('blur', $event)
 	inputOnFocus.value = false
 
-	if (_value.value.length > (options.value.currencySymbol.length + 1) && options.value.alwaysAllowDecimalCharacter) {
+	if (_value.value.length > currencyLengthAtLeft.value && options.value.alwaysAllowDecimalCharacter) {
+		const currencyPrefix = options.value.currencySymbolPlacement === 'p'
+		const valueWithoutCurrency = _value.value.replace(currencyPrefix ? `${options.value.currencySymbol} ` : ` ${options.value.currencySymbol}`, '')
 		/* Creating a string with options.value.decimalsAllowed zeros */
-		const decimalsNeeded = options.value.decimalsAllowed - checkDecimalCharsLength(_value.value)
+		const decimalsNeeded = options.value.decimalsAllowed - checkDecimalCharsLength(valueWithoutCurrency)
 		const decimals = Array.from({ length: decimalsNeeded }, (v, k) => '0').join('')
 
+		let temp
 		if (_value.value.includes(options.value.decimalChar)) {
-			$event.target.value = `${_value.value}${decimals}`
+			temp = `${valueWithoutCurrency}${decimals}`
 		} else {
-			$event.target.value = `${_value.value}${options.value.decimalChar}${decimals}`
+			temp = `${valueWithoutCurrency}${options.value.decimalChar}${decimals}`
 		}
 
+		$event.target.value = currencyPrefix ? `${options.value.currencySymbol} ${temp}` : `${temp} ${options.value.currencySymbol}`
 		updateValue($event.target.value)
 	} else {
 		setCurrencyShowValue(false)
@@ -251,7 +303,8 @@ const mouseLeaveHandler = $event => { if (!inputOnFocus.value) setCurrencyShowVa
 
 const setCurrencyShowValue = state => {
 	showCurrency.value = state
-	if (_value.value.length <= (options.value.currencySymbol.length + 1)) {
+	if (_value.value.length <= currencyLengthAtLeft.value) {
+		if (!state) currentCaretPositon.value = 0
 		setTimeout(() => handleValueChange(inputDomRef.value, true), 0)
 	}
 }
@@ -269,7 +322,6 @@ const inputValueHandler = $event => {
 		var checkIfDecimals = elem.value.split(options.value.decimalChar)[1]
 		if (checkIfDecimals.length === 0) elem.value = elem.value.split(options.value.decimalChar)[0]
 	}
-
 	currentCaretPositon.value = elem.selectionEnd
 	handleValueChange(elem, $event.inputType === 'insertFromPaste')
 }
@@ -313,7 +365,7 @@ const removingUnwantedChars = value => {
     for (var y = 0; y < valueArrayLength; y++) {
         if ((isValidSeparator(valueArray[y]) && options.value.alwaysAllowDecimalCharacter) || isDigit(valueArray[y])) {
 			newValueArray.push(valueArray[y])
-		} else {
+		} else if (y < currentCaretPositon.value) {
 			/* if we remove a char before our caret position, we need to subtract 1 to it's position for every nonvalid char */
 			currentCaretPositon.value--
 		}
@@ -381,20 +433,24 @@ const parseFloatAndFormat = value => {
 @return { number }
 */
 const checkDecimalCharsLength = value => {
-	const val = value.toString()
-
+	let val = value.toString()
 	/* var to save how many decimals chars value has */
 	let decimalChars = null
 	if (val.length === 0) return decimalChars
 
-	const valArray = val.split('')
+	/* Removing currencies to check decimals */
+	val = removeCurrencySymbol(val)
 
-    for (var y = (valArray.length - 1); y >= (valArray.length - 3) && y > 0; y--) {
+	const valArray = val.split('')
+	const initPosition = valArray.length - 1
+	const endPosition = valArray.length - 3
+
+    for (var y = initPosition; y >= endPosition && y > 0; y--) {
 		const value = valArray[y]
-        const isSeparator = !!ALLOWED_DECIMAL_SEPARATORS.find(separator => valArray[y].includes(separator)) && valArray[y] === options.value.decimalChar
+        const isSeparator = value === options.value.decimalChar && !!ALLOWED_DECIMAL_SEPARATORS.find(separator => value.includes(separator))
 
 		if (isSeparator) {
-			decimalChars = (valArray.length - 1) - y
+			decimalChars = initPosition - y
 			break
 		}
     }
@@ -416,6 +472,7 @@ const unformat = value => {
 	const numbers = val.replace(/\D+/g, '')
 
 	currentCaretPositon.value = currentCaretPositon.value - (val.length - numbers.length)
+
 	return numbers
 }
 
@@ -488,11 +545,21 @@ const applyingCurrencySymbol = value => {
 	if ((!options.value.currencySymbol.length || !value.length) && !showCurrency.value) return value
 
 	if (options.value.currencySymbolPlacement === 'p') {
-		currentCaretPositon.value = currentCaretPositon.value + options.value.currencySymbol.length + 1 /* this 1 is the space between currency and value */
+		/* this 1 is the space between currency and value */
+		currentCaretPositon.value = currentCaretPositon.value + currencyLengthAtLeft.value
 		return `${options.value.currencySymbol} ${value}`
 	} else {
 		return `${value} ${options.value.currencySymbol}`
 	}
+}
+
+/*
+* Remove currency from value
+@value { String }
+@return { String }
+*/
+const removeCurrencySymbol = value => {
+	return value.replace(` ${options.value.currencySymbol}`, '').replace(`${options.value.currencySymbol} `, '')
 }
 
 /*
@@ -545,7 +612,6 @@ const updateValue = value => {
 onMounted(() => {
 	if (props.value > options.value.maxValue) {
 		console.warn(`Value <${props.value}> falls out of our maxValue <${options.value.maxValue}>`)
-		return
 	}
 	handleValueChange(inputDomRef.value, true)
 })
