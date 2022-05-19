@@ -84,6 +84,7 @@ const _value = ref(props.value > options.value.maxValue ? '' : props.value)
 const inputDomRef = ref('')
 const showCurrency = ref(false)
 const inputOnFocus = ref(false)
+const triggerFocusCaret = ref(false)
 
 const ALLOWED_DECIMAL_SEPARATORS = [',', '.', '٫']
 const INTEGER_PATTERN = '(0|[1-9]\\d*)'
@@ -272,9 +273,10 @@ const blurHandler = $event => {
 	emit('blur', $event)
 	inputOnFocus.value = false
 
-	if (_value.value.length > currencyLengthAtLeft.value && options.value.alwaysAllowDecimalCharacter) {
+	const valueWithoutCurrency = removeCurrencySymbol(_value.value)
+
+	if (valueWithoutCurrency.length > 0 && options.value.alwaysAllowDecimalCharacter) {
 		const currencyPrefix = options.value.currencySymbolPlacement === 'p'
-		const valueWithoutCurrency = _value.value.replace(currencyPrefix ? `${options.value.currencySymbol} ` : ` ${options.value.currencySymbol}`, '')
 		/* Creating a string with options.value.decimalsAllowed zeros */
 		const decimalsNeeded = options.value.decimalsAllowed - checkDecimalCharsLength(valueWithoutCurrency)
 		const decimals = Array.from({ length: decimalsNeeded }, (v, k) => '0').join('')
@@ -295,6 +297,7 @@ const blurHandler = $event => {
 
 /* Logic to display currencySymbol on Focus / mouseOverHandler / mouseLeaveHandler, when input is empty */
 const focusHandler = $event => {
+	if (!inputOnFocus.value) triggerFocusCaret.value = true
 	inputOnFocus.value = true
 	setCurrencyShowValue(true)
 }
@@ -303,7 +306,9 @@ const mouseLeaveHandler = $event => { if (!inputOnFocus.value) setCurrencyShowVa
 
 const setCurrencyShowValue = state => {
 	showCurrency.value = state
-	if (_value.value.length <= currencyLengthAtLeft.value) {
+	const valueWithoutCurrency = removeCurrencySymbol(_value.value)
+
+	if (valueWithoutCurrency.length <= 0) {
 		if (!state) currentCaretPositon.value = 0
 		setTimeout(() => handleValueChange(inputDomRef.value, true), 0)
 	}
@@ -346,6 +351,17 @@ const handleValueChange = (elem, insertedFromPaste) => {
 	}
 	elem.value = unformat(elem.value)
 	elem.value = format(elem.value, decimals)
+
+	/**
+	* If we just focus our input, and it's empty, and currency is placed as suffix,
+	* we will position caret at the start
+	*/
+	if (removeCurrencySymbol(elem.value).length === 0 &&
+		triggerFocusCaret.value &&
+		options.value.currencySymbolPlacement === 's') {
+		currentCaretPositon.value = 0
+		triggerFocusCaret.value = false
+	}
 	setCaretPosition(elem, currentCaretPositon.value)
 
 	updateValue(elem.value)
